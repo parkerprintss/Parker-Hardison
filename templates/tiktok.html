@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}TikTok - Content Analytics{% endblock %}
+{% block header_title %}TikTok{% endblock %}
+{% block header_sub %}@{{ data.username }}{% endblock %}
+
+{% block content %}
+
+<div class="refresh-bar">
+    <span class="last-updated">Auto-refreshes every 15 min</span>
+    <a href="{{ url_for('refresh', platform='tiktok') }}" class="btn btn-refresh btn-sm">Refresh Now</a>
+</div>
+
+{% if data.error %}
+<div class="alert alert-warning">{{ data.error }}</div>
+{% elif data.note %}
+<div class="alert alert-info">{{ data.note }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-title">Profile Stats</div>
+    <div class="stat-grid">
+        <div class="stat-box tt">
+            <div class="stat-value big num">{{ "{:,}".format(data.followers) }}</div>
+            <div class="stat-label">Followers</div>
+        </div>
+        <div class="stat-box tt">
+            <div class="stat-value big num">{{ "{:,}".format(data.following) }}</div>
+            <div class="stat-label">Following</div>
+        </div>
+        <div class="stat-box tt">
+            <div class="stat-value num">{{ "{:,}".format(data.likes) }}</div>
+            <div class="stat-label">Total Likes</div>
+        </div>
+        <div class="stat-box tt">
+            <div class="stat-value num">{{ "{:,}".format(data.videos) }}</div>
+            <div class="stat-label">Videos</div>
+        </div>
+    </div>
+</div>
+
+{% if data.recent_videos %}
+<div class="card">
+    <div class="card-title">Recent Videos</div>
+    <ul class="entry-list">
+        {% for v in data.recent_videos %}
+        <li class="entry-item">
+            <div style="flex: 1;">
+                <div class="entry-title">{{ v.get('description', 'Video')[:80] }}</div>
+                <div class="entry-date">{{ v.get('date', '') }}</div>
+            </div>
+            <div class="entry-stats">
+                <div class="num">{{ "{:,}".format(v.get('views', 0)) }} views</div>
+                <div class="num">{{ "{:,}".format(v.get('likes', 0)) }} likes</div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% endblock %}

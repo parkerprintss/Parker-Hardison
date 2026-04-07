@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Content Analytics{% endblock %}
+{% block header_title %}Settings{% endblock %}
+{% block header_sub %}Configure your accounts{% endblock %}
+
+{% block content %}
+
+<a href="{{ url_for('dashboard') }}" class="back-link">&larr; Back to Dashboard</a>
+
+<form method="POST">
+    <div class="card">
+        <div class="platform-header">
+            <span class="platform-dot dot-yt"></span>
+            <div class="card-title" style="margin-bottom:0">YouTube</div>
+        </div>
+        <div class="form-group">
+            <label>YouTube API Key</label>
+            <input type="password" name="youtube_api_key" value="{{ youtube_api_key }}" placeholder="AIza...">
+            <div class="form-hint">Get a free API key from Google Cloud Console &gt; YouTube Data API v3</div>
+        </div>
+        <div class="form-group">
+            <label>Channel Handle</label>
+            <input type="text" name="youtube_handle" value="{{ youtube_handle }}" placeholder="@parkerprintss">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="platform-header">
+            <span class="platform-dot dot-tt"></span>
+            <div class="card-title" style="margin-bottom:0">TikTok</div>
+        </div>
+        <div class="form-group">
+            <label>TikTok Username</label>
+            <input type="text" name="tiktok_username" value="{{ tiktok_username }}" placeholder="parkerprintss">
+            <div class="form-hint">Your TikTok username without the @</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="platform-header">
+            <span class="platform-dot dot-ig"></span>
+            <div class="card-title" style="margin-bottom:0">Instagram</div>
+        </div>
+        <div class="form-group">
+            <label>Instagram Username</label>
+            <input type="text" name="instagram_username" value="{{ instagram_username }}" placeholder="parkerprintss">
+            <div class="form-hint">Your Instagram username without the @</div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Settings</button>
+</form>
+
+<div class="card" style="margin-top: 16px;">
+    <div class="card-title">How It Works</div>
+    <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.6;">
+        <p><strong>YouTube:</strong> Requires a free Google API key to pull channel stats, subscriber count, and video performance data.</p>
+        <br>
+        <p><strong>TikTok:</strong> Pulls publicly available profile data (followers, likes, video count) from your TikTok profile page.</p>
+        <br>
+        <p><strong>Instagram:</strong> Pulls publicly available profile data (followers, posts, recent content) from your Instagram profile.</p>
+        <br>
+        <p>Data auto-refreshes every 15 minutes. Tap "Refresh Now" on any platform page to update immediately.</p>
+    </div>
+</div>
+
+{% endblock %}

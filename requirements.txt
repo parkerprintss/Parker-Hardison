@@ -1,0 +1,7 @@
+Flask==3.1.0
+Flask-SQLAlchemy==3.1.1
+gunicorn==23.0.0
+requests==2.32.3
+beautifulsoup4==4.12.3
+google-api-python-client==2.155.0
+instaloader==4.13.1

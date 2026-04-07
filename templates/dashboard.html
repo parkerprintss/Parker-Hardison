@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Content Analytics{% endblock %}
+{% block header_title %}Content Analytics{% endblock %}
+{% block header_sub %}@parkerprintss - All platforms{% endblock %}
+
+{% block content %}
+
+<!-- YouTube Overview -->
+<div class="card">
+    <div class="platform-header">
+        <span class="platform-dot dot-yt"></span>
+        <div class="card-title" style="margin-bottom:0">YouTube</div>
+    </div>
+    {% if yt.error %}
+    <div class="alert alert-warning">{{ yt.error }}</div>
+    {% endif %}
+    <div class="stat-grid-3">
+        <div class="stat-box yt">
+            <div class="stat-value num">{{ "{:,}".format(yt.subscribers) }}</div>
+            <div class="stat-label">Subs</div>
+        </div>
+        <div class="stat-box yt">
+            <div class="stat-value num">{{ "{:,}".format(yt.total_views) }}</div>
+            <div class="stat-label">Views</div>
+        </div>
+        <div class="stat-box yt">
+            <div class="stat-value num">{{ "{:,}".format(yt.video_count) }}</div>
+            <div class="stat-label">Videos</div>
+        </div>
+    </div>
+    <a href="{{ url_for('youtube') }}" class="btn btn-outline btn-sm" style="margin-top: 10px;">View Details</a>
+</div>
+
+<!-- TikTok Overview -->
+<div class="card">
+    <div class="platform-header">
+        <span class="platform-dot dot-tt"></span>
+        <div class="card-title" style="margin-bottom:0">TikTok</div>
+    </div>
+    {% if tt.error %}
+    <div class="alert alert-warning">{{ tt.error }}</div>
+    {% elif tt.note %}
+    <div class="alert alert-info">{{ tt.note }}</div>
+    {% endif %}
+    <div class="stat-grid-3">
+        <div class="stat-box tt">
+            <div class="stat-value num">{{ "{:,}".format(tt.followers) }}</div>
+            <div class="stat-label">Followers</div>
+        </div>
+        <div class="stat-box tt">
+            <div class="stat-value num">{{ "{:,}".format(tt.likes) }}</div>
+            <div class="stat-label">Likes</div>
+        </div>
+        <div class="stat-box tt">
+            <div class="stat-value num">{{ "{:,}".format(tt.videos) }}</div>
+            <div class="stat-label">Videos</div>
+        </div>
+    </div>
+    <a href="{{ url_for('tiktok') }}" class="btn btn-outline btn-sm" style="margin-top: 10px;">View Details</a>
+</div>
+
+<!-- Instagram Overview -->
+<div class="card">
+    <div class="platform-header">
+        <span class="platform-dot dot-ig"></span>
+        <div class="card-title" style="margin-bottom:0">Instagram</div>
+    </div>
+    {% if ig.error %}
+    <div class="alert alert-warning">{{ ig.error }}</div>
+    {% elif ig.note %}
+    <div class="alert alert-info">{{ ig.note }}</div>
+    {% endif %}
+    <div class="stat-grid-3">
+        <div class="stat-box ig">
+            <div class="stat-value num">{{ "{:,}".format(ig.followers) }}</div>
+            <div class="stat-label">Followers</div>
+        </div>
+        <div class="stat-box ig">
+            <div class="stat-value num">{{ "{:,}".format(ig.posts) }}</div>
+            <div class="stat-label">Posts</div>
+        </div>
+        <div class="stat-box ig">
+            <div class="stat-value num">{{ "{:,}".format(ig.following) }}</div>
+            <div class="stat-label">Following</div>
+        </div>
+    </div>
+    <a href="{{ url_for('instagram') }}" class="btn btn-outline btn-sm" style="margin-top: 10px;">View Details</a>
+</div>
+
+<!-- Combined Stats -->
+<div class="card">
+    <div class="card-title">Combined Reach</div>
+    <div class="stat-grid">
+        <div class="stat-box all">
+            <div class="stat-value num">{{ "{:,}".format(yt.subscribers + tt.followers + ig.followers) }}</div>
+            <div class="stat-label">Total Audience</div>
+        </div>
+        <div class="stat-box all">
+            <div class="stat-value num">{{ "{:,}".format(yt.total_views + tt.likes) }}</div>
+            <div class="stat-label">Total Engagement</div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

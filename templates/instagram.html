@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}Instagram - Content Analytics{% endblock %}
+{% block header_title %}Instagram{% endblock %}
+{% block header_sub %}@{{ data.username }}{% endblock %}
+
+{% block content %}
+
+<div class="refresh-bar">
+    <span class="last-updated">Auto-refreshes every 15 min</span>
+    <a href="{{ url_for('refresh', platform='instagram') }}" class="btn btn-refresh btn-sm">Refresh Now</a>
+</div>
+
+{% if data.error %}
+<div class="alert alert-warning">{{ data.error }}</div>
+{% elif data.note %}
+<div class="alert alert-info">{{ data.note }}</div>
+{% endif %}
+
+<!-- Profile info -->
+{% if data.full_name or data.bio %}
+<div class="card">
+    <div style="font-size: 1rem; font-weight: 600;">{{ data.full_name }}</div>
+    {% if data.bio %}
+    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">{{ data.bio }}</div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-title">Profile Stats</div>
+    <div class="stat-grid-3">
+        <div class="stat-box ig">
+            <div class="stat-value big num">{{ "{:,}".format(data.followers) }}</div>
+            <div class="stat-label">Followers</div>
+        </div>
+        <div class="stat-box ig">
+            <div class="stat-value big num">{{ "{:,}".format(data.posts) }}</div>
+            <div class="stat-label">Posts</div>
+        </div>
+        <div class="stat-box ig">
+            <div class="stat-value big num">{{ "{:,}".format(data.following) }}</div>
+            <div class="stat-label">Following</div>
+        </div>
+    </div>
+</div>
+
+{% if data.recent_posts %}
+<div class="card">
+    <div class="card-title">Recent Posts</div>
+    <ul class="entry-list">
+        {% for p in data.recent_posts %}
+        <li class="entry-item">
+            {% if p.thumbnail %}
+            <img src="{{ p.thumbnail }}" alt="" class="thumbnail">
+            {% endif %}
+            <div style="flex: 1; min-width: 0;">
+                <div class="entry-title">{{ p.caption if p.caption else ('Reel' if p.is_video else 'Photo') }}</div>
+                <div class="entry-date">{{ p.timestamp }}</div>
+            </div>
+            <div class="entry-stats">
+                <div class="num">{{ "{:,}".format(p.likes) }} likes</div>
+                <div class="num">{{ "{:,}".format(p.comments) }} comments</div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% endblock %}

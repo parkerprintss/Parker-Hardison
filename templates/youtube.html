@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}YouTube - Content Analytics{% endblock %}
+{% block header_title %}YouTube{% endblock %}
+{% block header_sub %}{{ data.channel_name }}{% endblock %}
+
+{% block content %}
+
+<div class="refresh-bar">
+    <span class="last-updated">Auto-refreshes every 15 min</span>
+    <a href="{{ url_for('refresh', platform='youtube') }}" class="btn btn-refresh btn-sm">Refresh Now</a>
+</div>
+
+{% if data.error %}
+<div class="alert alert-warning">{{ data.error }}</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-title">Channel Stats</div>
+    <div class="stat-grid">
+        <div class="stat-box yt">
+            <div class="stat-value big num">{{ "{:,}".format(data.subscribers) }}</div>
+            <div class="stat-label">Subscribers</div>
+        </div>
+        <div class="stat-box yt">
+            <div class="stat-value big num">{{ "{:,}".format(data.total_views) }}</div>
+            <div class="stat-label">Total Views</div>
+        </div>
+        <div class="stat-box yt wide">
+            <div class="stat-value num">{{ "{:,}".format(data.video_count) }}</div>
+            <div class="stat-label">Videos Published</div>
+        </div>
+    </div>
+</div>
+
+{% if data.recent_videos %}
+<div class="card">
+    <div class="card-title">Recent Videos</div>
+    <ul class="entry-list">
+        {% for v in data.recent_videos %}
+        <li class="entry-item">
+            {% if v.thumbnail %}
+            <img src="{{ v.thumbnail }}" alt="" class="thumbnail">
+            {% endif %}
+            <div style="flex: 1; min-width: 0;">
+                <div class="entry-title">{{ v.title }}</div>
+                <div class="entry-date">{{ v.published }}</div>
+            </div>
+            <div class="entry-stats">
+                <div class="num">{{ "{:,}".format(v.views) }} views</div>
+                <div class="num">{{ "{:,}".format(v.likes) }} likes</div>
+                <div class="num">{{ "{:,}".format(v.comments) }} comments</div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+{% if not data.recent_videos and not data.error %}
+<div class="empty-state">
+    <p>No video data available yet. Make sure your YouTube API key is set in Settings.</p>
+</div>
+{% endif %}
+
+{% endblock %}
