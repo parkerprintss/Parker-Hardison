@@ -88,6 +88,42 @@
     <a href="{{ url_for('instagram') }}" class="btn btn-outline btn-sm" style="margin-top: 10px;">View Details</a>
 </div>
 
+<!-- Video Ideas for Today -->
+<div class="card">
+    <div class="section-header">
+        <div>
+            <div class="card-title" style="margin-bottom:0">Video Ideas</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted);">{{ today.strftime('%A, %b %d') }}</div>
+        </div>
+        <a href="{{ url_for('ideas') }}" class="btn btn-outline btn-sm">View All</a>
+    </div>
+    {% if ideas %}
+    <ul class="entry-list">
+        {% for idea in ideas[:4] %}
+        <li class="entry-item">
+            <div style="width: 26px; height: 26px; border-radius: 6px; background: {% if idea.category == 'business' %}rgba(245,158,11,0.15){% else %}rgba(124,58,237,0.15){% endif %}; color: {% if idea.category == 'business' %}var(--warning){% else %}var(--accent){% endif %}; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.7rem; flex-shrink: 0;">
+                {% if idea.category == 'business' %}B{% else %}{{ idea.position }}{% endif %}
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div class="entry-title">{{ idea.title }}</div>
+                <div class="entry-date">
+                    {{ idea.platform | upper }}
+                    {% if idea.category == 'business' %} &middot; <span style="color: var(--warning);">BUSINESS</span>{% endif %}
+                </div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% if ideas | length > 4 %}
+    <a href="{{ url_for('ideas') }}" style="display: block; text-align: center; font-size: 0.75rem; color: var(--accent); text-decoration: none; padding-top: 8px;">+ {{ ideas | length - 4 }} more ideas</a>
+    {% endif %}
+    {% else %}
+    <div class="empty-state" style="padding: 16px;">
+        <p>Tap "View All" to generate today's ideas</p>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Combined Stats -->
 <div class="card">
     <div class="card-title">Combined Reach</div>

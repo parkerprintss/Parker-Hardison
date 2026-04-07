@@ -1,5 +1,7 @@
+import hashlib
 import json
 import os
+import random
 import traceback
 from datetime import datetime, date, timedelta
 
@@ -405,7 +407,10 @@ def dashboard():
     yt = fetch_youtube_data()
     tt = fetch_tiktok_data()
     ig = fetch_instagram_data()
-    return render_template("dashboard.html", yt=yt, tt=tt, ig=ig)
+    today_ideas = get_daily_ideas(date.today())
+    # Only show non-skipped ideas
+    today_ideas = [i for i in today_ideas if i.status != "skipped"]
+    return render_template("dashboard.html", yt=yt, tt=tt, ig=ig, ideas=today_ideas, today=date.today())
 
 
 @app.route("/youtube")
@@ -460,6 +465,245 @@ def settings():
         tiktok_username=get_setting("tiktok_username", TIKTOK_USERNAME),
         instagram_username=get_setting("instagram_username", INSTAGRAM_USERNAME),
     )
+
+
+# --- Video Ideas ---
+
+# Content idea pools - organized by category
+# Every 6th slot is reserved for a BUSINESS idea (non-Claude, non-AI)
+CONTENT_IDEAS = {
+    "creator": [
+        {"title": "How I Film & Edit on My Phone in Under 30 Min", "platform": "all", "hook": "Most creators overcomplicate this..."},
+        {"title": "The Exact Posting Schedule That Grew My Audience", "platform": "all", "hook": "I tested 5 different schedules and here's what worked"},
+        {"title": "How to Repurpose 1 Video Into 10 Pieces of Content", "platform": "all", "hook": "Work smarter, not harder"},
+        {"title": "Behind the Scenes: My Full Content Creation Setup", "platform": "youtube", "hook": "Everything I use to create content daily"},
+        {"title": "5 Free Apps Every Content Creator Needs", "platform": "all", "hook": "These changed my workflow completely"},
+        {"title": "How I Come Up With Content Ideas Every Single Day", "platform": "all", "hook": "Never run out of ideas again"},
+        {"title": "Reacting to My First Ever Video", "platform": "youtube", "hook": "This is embarrassing but let's go"},
+        {"title": "Day in the Life of a Full-Time Creator", "platform": "all", "hook": "What my average day actually looks like"},
+        {"title": "The Truth About Being a Content Creator No One Talks About", "platform": "youtube", "hook": "It's not all what it seems"},
+        {"title": "How to Start Creating Content With Zero Followers", "platform": "all", "hook": "I wish someone told me this when I started"},
+    ],
+    "growth": [
+        {"title": "How I Gained My First 1,000 Followers", "platform": "all", "hook": "The strategy that actually worked"},
+        {"title": "Why Your Videos Aren't Getting Views (And How to Fix It)", "platform": "youtube", "hook": "3 mistakes killing your reach"},
+        {"title": "The Hook Formula That Gets People to Stop Scrolling", "platform": "tiktok", "hook": "Use this in your first 3 seconds"},
+        {"title": "How the Algorithm Actually Works in 2026", "platform": "all", "hook": "Stop guessing, start understanding"},
+        {"title": "Small Creator Tips That Big Creators Won't Tell You", "platform": "all", "hook": "These are game changers"},
+        {"title": "I Tried Posting 3x a Day for 30 Days - Here's What Happened", "platform": "tiktok", "hook": "The results surprised me"},
+        {"title": "How to Make Your Thumbnails Stand Out", "platform": "youtube", "hook": "Simple design tricks that boost CTR"},
+        {"title": "Stop Chasing Trends - Do This Instead", "platform": "all", "hook": "Trends fade, this doesn't"},
+    ],
+    "lifestyle": [
+        {"title": "My Morning Routine as a Creator", "platform": "all", "hook": "Productive but realistic"},
+        {"title": "What I Spend in a Week as a Content Creator", "platform": "youtube", "hook": "Full transparency, no cap"},
+        {"title": "Organizing My Life With These Simple Systems", "platform": "all", "hook": "From chaos to clarity"},
+        {"title": "Things I Stopped Doing That Changed My Life", "platform": "all", "hook": "Sometimes less is more"},
+        {"title": "My Top 5 Productivity Hacks That Actually Work", "platform": "all", "hook": "No fluff, just results"},
+        {"title": "How I Stay Motivated When I Don't Feel Like Creating", "platform": "all", "hook": "Real talk about burnout"},
+        {"title": "Room/Studio Tour & Setup Breakdown", "platform": "youtube", "hook": "Where the magic happens"},
+        {"title": "Monthly Reset Routine - How I Plan My Content", "platform": "all", "hook": "Start each month with a clear plan"},
+    ],
+    "tech": [
+        {"title": "Best Budget Tech for Content Creators in 2026", "platform": "youtube", "hook": "You don't need expensive gear"},
+        {"title": "iPhone vs Android for Content Creation - Honest Take", "platform": "all", "hook": "Which one actually wins?"},
+        {"title": "Apps on My Phone You've Never Heard Of", "platform": "tiktok", "hook": "Hidden gems that save me hours"},
+        {"title": "My Favorite Shortcuts & Automations on My Phone", "platform": "all", "hook": "Work faster with these tricks"},
+        {"title": "Gadgets I Regret Buying vs Gadgets Worth Every Dollar", "platform": "youtube", "hook": "Honest reviews only"},
+        {"title": "How to Get Better Audio on Your Videos (No Expensive Mic)", "platform": "all", "hook": "Audio > video quality, always"},
+    ],
+    # BUSINESS ideas (non-Claude, non-AI) - every 6th video
+    "business": [
+        {"title": "How to Build Multiple Income Streams as a Creator", "platform": "youtube", "hook": "Don't rely on one source of income"},
+        {"title": "The Business Side of Content Creation Nobody Teaches You", "platform": "youtube", "hook": "Taxes, contracts, and real talk"},
+        {"title": "How to Price Yourself for Brand Deals", "platform": "all", "hook": "Stop undercharging - here's the formula"},
+        {"title": "Building a Personal Brand That Lasts", "platform": "all", "hook": "Trends die, brands don't"},
+        {"title": "How to Turn Your Content Into a Real Business", "platform": "youtube", "hook": "From hobby to LLC"},
+        {"title": "Investing Basics Every Young Creator Should Know", "platform": "youtube", "hook": "Start building wealth now"},
+        {"title": "How I Negotiate Brand Deals (With Real Examples)", "platform": "youtube", "hook": "The exact emails I send"},
+        {"title": "Creating Products vs Services - Which Is Better for Creators?", "platform": "all", "hook": "Pros and cons of each"},
+        {"title": "Financial Mistakes I Made as a Creator (So You Don't Have To)", "platform": "youtube", "hook": "Learn from my L's"},
+        {"title": "How to Build an Email List That Actually Makes Money", "platform": "all", "hook": "Social media is rented land"},
+        {"title": "Side Hustles That Actually Work in 2026", "platform": "all", "hook": "Tried and tested, not just theory"},
+        {"title": "How to Read a Contract Before Signing a Brand Deal", "platform": "youtube", "hook": "Protect yourself - here's what to look for"},
+    ],
+}
+
+
+class VideoIdea(db.Model):
+    """Stores video ideas with status tracking."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    title = db.Column(db.String(300), nullable=False)
+    platform = db.Column(db.String(20), default="all")
+    hook = db.Column(db.String(500), default="")
+    category = db.Column(db.String(50), default="creator")
+    position = db.Column(db.Integer, default=0)  # 1-based position in the day's list
+    status = db.Column(db.String(20), default="suggested")  # suggested, skipped, saved, filmed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+def get_daily_ideas(target_date=None, force_refresh=False):
+    """Generate or retrieve video ideas for a given date."""
+    if target_date is None:
+        target_date = date.today()
+
+    # Check if we already have ideas for this date
+    existing = VideoIdea.query.filter_by(date=target_date).order_by(VideoIdea.position).all()
+    if existing and not force_refresh:
+        return existing
+
+    # If force refresh, delete old suggested ones (keep saved/filmed)
+    if force_refresh:
+        VideoIdea.query.filter_by(date=target_date, status="suggested").delete()
+        VideoIdea.query.filter_by(date=target_date, status="skipped").delete()
+        db.session.commit()
+        # Keep saved/filmed ones
+        kept = VideoIdea.query.filter_by(date=target_date).all()
+        kept_titles = {v.title for v in kept}
+    else:
+        kept_titles = set()
+
+    # Use date as seed for consistent but different ideas each day
+    seed = int(hashlib.md5(target_date.isoformat().encode()).hexdigest(), 16)
+    rng = random.Random(seed)
+
+    # If refreshing, use a different seed
+    if force_refresh:
+        refresh_count = VideoIdea.query.filter_by(date=target_date).count()
+        seed = int(hashlib.md5(f"{target_date.isoformat()}-{refresh_count}".encode()).hexdigest(), 16)
+        rng = random.Random(seed)
+
+    # Build the day's lineup: 5 content ideas + position 6 is always business
+    categories = ["creator", "growth", "lifestyle", "tech"]
+    ideas_to_add = []
+
+    # Pick 5 ideas from non-business categories
+    all_content = []
+    for cat in categories:
+        for idea in CONTENT_IDEAS[cat]:
+            if idea["title"] not in kept_titles:
+                all_content.append({**idea, "category": cat})
+
+    rng.shuffle(all_content)
+    selected = all_content[:5]
+
+    # Pick 1 business idea for position 6
+    biz_ideas = [i for i in CONTENT_IDEAS["business"] if i["title"] not in kept_titles]
+    rng.shuffle(biz_ideas)
+    biz_pick = biz_ideas[0] if biz_ideas else None
+
+    # Create the ideas
+    for i, idea in enumerate(selected, 1):
+        vi = VideoIdea(
+            date=target_date,
+            title=idea["title"],
+            platform=idea.get("platform", "all"),
+            hook=idea.get("hook", ""),
+            category=idea["category"],
+            position=i,
+            status="suggested",
+        )
+        db.session.add(vi)
+        ideas_to_add.append(vi)
+
+    if biz_pick:
+        vi = VideoIdea(
+            date=target_date,
+            title=biz_pick["title"],
+            platform=biz_pick.get("platform", "all"),
+            hook=biz_pick.get("hook", ""),
+            category="business",
+            position=6,
+            status="suggested",
+        )
+        db.session.add(vi)
+        ideas_to_add.append(vi)
+
+    db.session.commit()
+
+    return VideoIdea.query.filter_by(date=target_date).order_by(VideoIdea.position).all()
+
+
+@app.route("/ideas")
+def ideas():
+    today = date.today()
+    daily = get_daily_ideas(today)
+    saved = VideoIdea.query.filter_by(status="saved").order_by(VideoIdea.date.desc()).all()
+    filmed = VideoIdea.query.filter_by(status="filmed").order_by(VideoIdea.date.desc()).limit(20).all()
+    return render_template("ideas.html", ideas=daily, saved=saved, filmed=filmed, today=today)
+
+
+@app.route("/ideas/refresh")
+def ideas_refresh():
+    get_daily_ideas(date.today(), force_refresh=True)
+    flash("Fresh ideas loaded!", "success")
+    return redirect(url_for("ideas"))
+
+
+@app.route("/ideas/skip/<int:idea_id>")
+def idea_skip(idea_id):
+    idea = VideoIdea.query.get_or_404(idea_id)
+    idea.status = "skipped"
+    db.session.commit()
+
+    # Generate a replacement idea in the same position
+    target_date = idea.date
+    seed = int(hashlib.md5(f"{target_date.isoformat()}-skip-{idea_id}".encode()).hexdigest(), 16)
+    rng = random.Random(seed)
+
+    existing_titles = {v.title for v in VideoIdea.query.filter_by(date=target_date).all()}
+
+    if idea.category == "business":
+        pool = [i for i in CONTENT_IDEAS["business"] if i["title"] not in existing_titles]
+    else:
+        pool = []
+        for cat in ["creator", "growth", "lifestyle", "tech"]:
+            pool.extend({**i, "category": cat} for i in CONTENT_IDEAS[cat] if i["title"] not in existing_titles)
+
+    if pool:
+        rng.shuffle(pool)
+        pick = pool[0]
+        replacement = VideoIdea(
+            date=target_date,
+            title=pick["title"],
+            platform=pick.get("platform", "all"),
+            hook=pick.get("hook", ""),
+            category=pick.get("category", idea.category),
+            position=idea.position,
+            status="suggested",
+        )
+        db.session.add(replacement)
+        db.session.commit()
+
+    return redirect(url_for("ideas"))
+
+
+@app.route("/ideas/save/<int:idea_id>")
+def idea_save(idea_id):
+    idea = VideoIdea.query.get_or_404(idea_id)
+    idea.status = "saved"
+    db.session.commit()
+    flash(f"Saved: {idea.title}", "success")
+    return redirect(url_for("ideas"))
+
+
+@app.route("/ideas/filmed/<int:idea_id>")
+def idea_filmed(idea_id):
+    idea = VideoIdea.query.get_or_404(idea_id)
+    idea.status = "filmed"
+    db.session.commit()
+    flash(f"Marked as filmed: {idea.title}", "success")
+    return redirect(url_for("ideas"))
+
+
+@app.route("/ideas/unsave/<int:idea_id>")
+def idea_unsave(idea_id):
+    idea = VideoIdea.query.get_or_404(idea_id)
+    idea.status = "suggested"
+    db.session.commit()
+    return redirect(url_for("ideas"))
 
 
 # --- Init DB ---

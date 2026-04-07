@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+
+{% block title %}Video Ideas - Content Analytics{% endblock %}
+{% block header_title %}Video Ideas{% endblock %}
+{% block header_sub %}Today's content lineup{% endblock %}
+
+{% block content %}
+
+<div class="refresh-bar">
+    <span class="last-updated">{{ today.strftime('%A, %B %d') }}</span>
+    <a href="{{ url_for('ideas_refresh') }}" class="btn btn-refresh btn-sm">Shuffle All</a>
+</div>
+
+<!-- Today's Ideas -->
+<div class="card">
+    <div class="card-title">Today's Ideas</div>
+    {% set active_ideas = ideas | selectattr('status', 'ne', 'skipped') | list %}
+    {% if active_ideas %}
+    <ul class="entry-list">
+        {% for idea in active_ideas %}
+        <li class="idea-item">
+            <div class="idea-number {% if idea.category == 'business' %}biz{% endif %}">
+                {% if idea.category == 'business' %}B{% else %}{{ idea.position }}{% endif %}
+            </div>
+            <div class="idea-content">
+                <div class="entry-title">{{ idea.title }}</div>
+                {% if idea.hook %}
+                <div class="idea-hook">"{{ idea.hook }}"</div>
+                {% endif %}
+                <div class="idea-meta">
+                    <span class="idea-platform">{{ idea.platform | upper }}</span>
+                    {% if idea.category == 'business' %}
+                    <span class="idea-badge biz-badge">BUSINESS</span>
+                    {% else %}
+                    <span class="idea-badge cat-badge">{{ idea.category | upper }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="idea-actions">
+                {% if idea.status == 'suggested' %}
+                <a href="{{ url_for('idea_save', idea_id=idea.id) }}" class="idea-btn save" title="Save">&#9733;</a>
+                <a href="{{ url_for('idea_skip', idea_id=idea.id) }}" class="idea-btn skip" title="Skip">&#10005;</a>
+                {% elif idea.status == 'saved' %}
+                <a href="{{ url_for('idea_filmed', idea_id=idea.id) }}" class="idea-btn film" title="Mark Filmed">&#10003;</a>
+                <a href="{{ url_for('idea_unsave', idea_id=idea.id) }}" class="idea-btn skip" title="Unsave">&#10005;</a>
+                {% elif idea.status == 'filmed' %}
+                <span class="idea-btn filmed-badge">&#10003;</span>
+                {% endif %}
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state">
+        <p>No ideas yet. Tap "Shuffle All" to generate fresh ideas!</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Saved Ideas -->
+{% if saved %}
+<div class="card">
+    <div class="card-title">Saved Ideas</div>
+    <ul class="entry-list">
+        {% for idea in saved %}
+        <li class="idea-item">
+            <div class="idea-number saved-num">&#9733;</div>
+            <div class="idea-content">
+                <div class="entry-title">{{ idea.title }}</div>
+                <div class="entry-date">Saved from {{ idea.date.strftime('%b %d') }}</div>
+            </div>
+            <div class="idea-actions">
+                <a href="{{ url_for('idea_filmed', idea_id=idea.id) }}" class="idea-btn film" title="Mark Filmed">&#10003;</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Recently Filmed -->
+{% if filmed %}
+<div class="card">
+    <div class="card-title">Recently Filmed</div>
+    <ul class="entry-list">
+        {% for idea in filmed %}
+        <li class="idea-item" style="opacity: 0.6;">
+            <div class="idea-number" style="background: rgba(34,197,94,0.15); color: var(--success);">&#10003;</div>
+            <div class="idea-content">
+                <div class="entry-title">{{ idea.title }}</div>
+                <div class="entry-date">{{ idea.date.strftime('%b %d, %Y') }}</div>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<style>
+    .idea-item {
+        display: flex;
+        align-items: flex-start;
+        padding: 14px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.04);
+        gap: 12px;
+    }
+    .idea-item:last-child { border-bottom: none; }
+
+    .idea-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        background: rgba(124,58,237,0.15);
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .idea-number.biz {
+        background: rgba(245,158,11,0.15);
+        color: var(--warning);
+    }
+
+    .idea-number.saved-num {
+        background: rgba(245,158,11,0.15);
+        color: var(--warning);
+    }
+
+    .idea-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .idea-hook {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-style: italic;
+        margin-top: 3px;
+        line-height: 1.3;
+    }
+
+    .idea-meta {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+        flex-wrap: wrap;
+    }
+
+    .idea-platform {
+        font-size: 0.6rem;
+        color: var(--text-muted);
+        background: rgba(255,255,255,0.05);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    .idea-badge {
+        font-size: 0.6rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+    .cat-badge {
+        background: rgba(124,58,237,0.12);
+        color: var(--accent);
+    }
+
+    .biz-badge {
+        background: rgba(245,158,11,0.12);
+        color: var(--warning);
+    }
+
+    .idea-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .idea-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+
+    .idea-btn.save {
+        background: rgba(245,158,11,0.12);
+        color: var(--warning);
+    }
+
+    .idea-btn.skip {
+        background: rgba(239,68,68,0.1);
+        color: #ef4444;
+    }
+
+    .idea-btn.film {
+        background: rgba(34,197,94,0.12);
+        color: var(--success);
+    }
+
+    .idea-btn.filmed-badge {
+        background: rgba(34,197,94,0.12);
+        color: var(--success);
+        cursor: default;
+    }
+</style>
+
+{% endblock %}

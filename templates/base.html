@@ -428,6 +428,10 @@
             <span class="nav-icon">&#9783;</span>
             Home
         </a>
+        <a href="{{ url_for('ideas') }}" class="nav-item {% if request.endpoint == 'ideas' %}active{% endif %}">
+            <span class="nav-icon">&#9881;</span>
+            Ideas
+        </a>
         <a href="{{ url_for('youtube') }}" class="nav-item {% if request.endpoint == 'youtube' %}active{% endif %}">
             <span class="nav-icon">&#9654;</span>
             YouTube
